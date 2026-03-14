@@ -6,7 +6,7 @@ import { renderMarkdownDirectory } from './md-to-pdf.mjs';
 import { uploadToRemarkable } from './upload-remarkable.mjs';
 
 function printHelp() {
-  console.log(`remarkable-md-pdf
+  console.log(`draft-pipeline - A tool to convert markdown files to PDFs and upload them to reMarkable.
 
 Commands:
   css     Build Tailwind CSS

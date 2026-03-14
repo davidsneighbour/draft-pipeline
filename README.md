@@ -1,4 +1,4 @@
-# remarkable-md-pdf
+# draft-pipeline
 
 A standalone package extracted from the `bookofhugo.dev` toolchain for:
 
@@ -81,18 +81,3 @@ The package intentionally fails with direct explanations when:
 - upload is enabled but folder UUID is missing,
 - no PDFs are available for upload,
 - Tailwind build command fails.
-
-## Suggested extraction into a new repository
-
-Copy this folder as a repository root and keep this structure:
-
-```text
-remarkable-md-pdf/
-  package.json
-  .env.example
-  src/
-  templates/
-  styles/
-```
-
-Then add your own `book/` directory and run `npm run build`.
