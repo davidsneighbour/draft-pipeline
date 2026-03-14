@@ -1,0 +1,23 @@
+@page :left {
+  margin-top: var(--pdf-margin-top);
+  margin-right: var(--pdf-margin-inner);
+  margin-bottom: var(--pdf-margin-bottom);
+  margin-left: var(--pdf-margin-outer);
+}
+
+@page :right {
+  margin-top: var(--pdf-margin-top);
+  margin-right: var(--pdf-margin-outer);
+  margin-bottom: var(--pdf-margin-bottom);
+  margin-left: var(--pdf-margin-inner);
+}
+
+main.document h1 {
+  break-before: right;
+  page-break-before: right;
+}
+
+main.document > h1:first-child {
+  break-before: auto;
+  page-break-before: auto;
+}

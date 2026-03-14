@@ -1,0 +1,25 @@
+<div style="font-size: 9px; color: #6b7280; font-family: Arial, sans-serif; width: 100%; box-sizing: border-box; padding: 0 12mm;">
+  <span class="pageNumber" style="display:none;"></span>
+  <div id="header-odd" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+    <span>{{title}}</span>
+    <span>{{fileName}}</span>
+  </div>
+  <div id="header-even" style="display:none; align-items:center; justify-content:space-between; width:100%;">
+    <span>{{fileName}}</span>
+    <span>{{title}}</span>
+  </div>
+</div>
+<script>
+  (function () {
+    var pageNumberElement = document.querySelector('.pageNumber');
+    var pageNumber = Number((pageNumberElement && pageNumberElement.textContent) || '1');
+    var isEven = pageNumber % 2 === 0;
+    var oddHeader = document.getElementById('header-odd');
+    var evenHeader = document.getElementById('header-even');
+
+    if (oddHeader && evenHeader) {
+      oddHeader.style.display = isEven ? 'none' : 'flex';
+      evenHeader.style.display = isEven ? 'flex' : 'none';
+    }
+  })();
+</script>

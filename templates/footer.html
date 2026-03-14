@@ -1,0 +1,25 @@
+<div style="font-size: 9px; color: #6b7280; font-family: Arial, sans-serif; width: 100%; box-sizing: border-box; padding: 0 12mm;">
+  <span class="pageNumber" style="display:none;"></span>
+  <div id="footer-odd" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+    <span>{{title}}</span>
+    <span><span class="pageNumber"></span>/<span class="totalPages"></span></span>
+  </div>
+  <div id="footer-even" style="display:none; align-items:center; justify-content:space-between; width:100%;">
+    <span><span class="pageNumber"></span>/<span class="totalPages"></span></span>
+    <span>{{title}}</span>
+  </div>
+</div>
+<script>
+  (function () {
+    var pageNumberElement = document.querySelector('.pageNumber');
+    var pageNumber = Number((pageNumberElement && pageNumberElement.textContent) || '1');
+    var isEven = pageNumber % 2 === 0;
+    var oddFooter = document.getElementById('footer-odd');
+    var evenFooter = document.getElementById('footer-even');
+
+    if (oddFooter && evenFooter) {
+      oddFooter.style.display = isEven ? 'none' : 'flex';
+      evenFooter.style.display = isEven ? 'flex' : 'none';
+    }
+  })();
+</script>

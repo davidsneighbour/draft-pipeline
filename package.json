@@ -1,0 +1,25 @@
+{
+  "name": "@davidsneighbour/draft-pipeline",
+  "version": "0.1.0",
+  "description": "Reusable markdown-to-pdf and optional reMarkable upload toolkit",
+  "type": "module",
+  "bin": {
+    "draft-pipeline": "./src/cli.mjs"
+  },
+  "scripts": {
+    "css": "node ./src/cli.mjs css",
+    "pdf": "node ./src/cli.mjs pdf",
+    "upload": "node ./src/cli.mjs upload",
+    "build": "node ./src/cli.mjs build",
+    "check": "node --check ./src/*.mjs"
+  },
+  "dependencies": {
+    "@tailwindcss/cli": "4.2.1",
+    "dotenv": "17.3.1",
+    "fast-glob": "3.3.3",
+    "gray-matter": "4.0.3",
+    "marked": "17.0.4",
+    "playwright": "1.58.2",
+    "tailwindcss": "4.2.1"
+  }
+}

@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+}
+
+@page {
+  size: auto;
+}
+
+html {
+  @apply h-full w-full;
+  @apply bg-white text-gray-800;
+}
+
+body {
+  @apply bg-white text-gray-800;
+}
