@@ -13,7 +13,8 @@
     "build": "node ./src/cli.mjs build",
     "check": "node --check ./src/*.mjs",
     "release": "release-it --config .release-it.ts",
-    "release:pre": "release-it --config .release-it.ts --preRelease=rc"
+    "release:pre": "release-it --config .release-it.ts --preRelease=rc",
+    "test": "node --test"
   },
   "dependencies": {
     "@tailwindcss/cli": "4.2.1",
