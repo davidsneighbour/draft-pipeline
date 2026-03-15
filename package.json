@@ -11,7 +11,9 @@
     "pdf": "node ./src/cli.mjs pdf",
     "upload": "node ./src/cli.mjs upload",
     "build": "node ./src/cli.mjs build",
-    "check": "node --check ./src/*.mjs"
+    "check": "node --check ./src/*.mjs",
+    "release": "release-it --config .release-it.ts",
+    "release:pre": "release-it --config .release-it.ts --preRelease=rc"
   },
   "dependencies": {
     "@tailwindcss/cli": "4.2.1",
@@ -21,5 +23,9 @@
     "marked": "17.0.4",
     "playwright": "1.58.2",
     "tailwindcss": "4.2.1"
+  },
+  "devDependencies": {
+    "@release-it/conventional-changelog": "10.0.6",
+    "release-it": "19.2.4"
   }
 }

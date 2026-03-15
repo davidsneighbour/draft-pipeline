@@ -20,12 +20,12 @@
 
 ### Add release pipeline via release-it
 
-- [ ] add release-it configuration
-- [ ] add `npm run release` script using release-it config
-- [ ] add npm package release
-- [ ] add github release
-- [ ] add conventional commits changelog generation via release-it plugin
-- [ ] add `npm run release:pre` to create pre-release packages
+- [x] add release-it configuration
+- [x] add `npm run release` script using release-it config
+- [x] add npm package release
+- [x] add github release
+- [x] add conventional commits changelog generation via release-it plugin
+- [x] add `npm run release:pre` to create pre-release packages
 
 ### Fix/Add config order
 

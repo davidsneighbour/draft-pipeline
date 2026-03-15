@@ -47,6 +47,8 @@ npm run css      # compile tailwind css
 npm run pdf      # generate PDFs only
 npm run upload   # upload only (if enabled)
 npm run build    # css + pdf + upload
+npm run release  # create a stable release (git tag + npm + GitHub)
+npm run release:pre # create an rc pre-release
 ```
 
 Or with the CLI:
