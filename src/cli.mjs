@@ -19,6 +19,8 @@ Options:
   --footer-template <path>    Override FOOTER_TEMPLATE_PATH
   --document-template <path>  Override DOCUMENT_TEMPLATE_PATH
   --book-layout-css <path>    Override BOOK_LAYOUT_CSS_PATH
+  --printready                Enable print-ready PDF output with bleed area
+  --bleed <length>            Override PDF_BLEED (used with --printready)
 
 Configuration:
   Configure via environment variables or Node.js --env-file (see .env.example).
@@ -69,6 +71,17 @@ function parseCliArgs(argv) {
 
     if (arg === '--book-layout-css') {
       overrides.bookLayoutCssPath = readOptionValue(optionArgs, i, arg);
+      i += 1;
+      continue;
+    }
+
+    if (arg === '--printready') {
+      overrides.printReady = true;
+      continue;
+    }
+
+    if (arg === '--bleed') {
+      overrides.pdfBleed = readOptionValue(optionArgs, i, arg);
       i += 1;
       continue;
     }

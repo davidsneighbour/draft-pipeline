@@ -42,6 +42,34 @@ function applyTemplate(template, replacements) {
   return template.replaceAll(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (token, key) => replacements[key] ?? token);
 }
 
+function getPdfRenderSettings(config) {
+  if (!config.pdfPrintReady) {
+    return {
+      width: '7in',
+      height: '10in',
+      marginTop: '20mm',
+      marginBottom: '20mm',
+      marginInner: '1.5cm',
+      marginOuter: '1cm',
+      bleed: '0mm',
+      browserMargin: { top: '20mm', right: '0mm', bottom: '20mm', left: '0mm' },
+    };
+  }
+
+  const bleed = String(config.pdfBleed).trim();
+
+  return {
+    width: '7.25in',
+    height: '10.25in',
+    marginTop: '20mm',
+    marginBottom: '20mm',
+    marginInner: '1.5cm',
+    marginOuter: '1cm',
+    bleed,
+    browserMargin: { top: bleed, right: bleed, bottom: bleed, left: bleed },
+  };
+}
+
 async function buildJobs(inputDir, outputDir) {
   const files = await fg(['**/*.md', '**/*.markdown'], {
     cwd: inputDir,
@@ -97,6 +125,7 @@ export async function renderMarkdownDirectory(config, { verbose = false } = {}) 
   ]);
 
   const jobs = await buildJobs(config.markdownInputDir, config.outputDir);
+  const renderSettings = getPdfRenderSettings(config);
   if (jobs.length === 0) {
     throw new Error(`No markdown files found in ${config.markdownInputDir}. Add *.md files or change MARKDOWN_INPUT_DIR.`);
   }
@@ -114,10 +143,11 @@ export async function renderMarkdownDirectory(config, { verbose = false } = {}) 
         documentTitle: escapeHtml(job.title),
         css: `${css}\n${bookCss}`,
         htmlBody,
-        marginTop: '20mm',
-        marginBottom: '20mm',
-        marginInner: '1.5cm',
-        marginOuter: '1cm',
+        marginTop: renderSettings.marginTop,
+        marginBottom: renderSettings.marginBottom,
+        marginInner: renderSettings.marginInner,
+        marginOuter: renderSettings.marginOuter,
+        bleed: renderSettings.bleed,
       });
 
       const page = await browser.newPage();
@@ -125,8 +155,8 @@ export async function renderMarkdownDirectory(config, { verbose = false } = {}) 
         await page.setContent(html, { waitUntil: 'load' });
         await page.pdf({
           path: job.outputPdfPath,
-          width: '7in',
-          height: '10in',
+          width: renderSettings.width,
+          height: renderSettings.height,
           printBackground: true,
           displayHeaderFooter: true,
           headerTemplate: applyTemplate(headerTemplate, {
@@ -139,7 +169,7 @@ export async function renderMarkdownDirectory(config, { verbose = false } = {}) 
             flatPdfName: escapeHtml(path.basename(job.outputPdfPath)),
             title: escapeHtml(job.title),
           }),
-          margin: { top: '20mm', right: '0mm', bottom: '20mm', left: '0mm' },
+          margin: renderSettings.browserMargin,
         });
       } finally {
         await page.close();

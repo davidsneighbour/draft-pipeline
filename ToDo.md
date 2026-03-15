@@ -11,7 +11,7 @@
 
 ### Add print ready PDF output
 
-- [ ] add bleeds to PDF output and make it configurable (only when CLI parameter `--printready` is added)
+- [x] add bleeds to PDF output and make it configurable (only when CLI parameter `--printready` is added)
 
 ### Deprecate dotenv usage
 

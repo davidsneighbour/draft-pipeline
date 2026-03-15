@@ -22,6 +22,8 @@ const DEFAULTS = {
   SSH_TARGET_DIR: '',
   SSH_UPLOAD_METHOD: 'scp',
   SSH_PORT: '',
+  PDF_PRINT_READY: 'false',
+  PDF_BLEED: '3mm',
 };
 
 function parseBoolean(value, name) {
@@ -66,10 +68,16 @@ export function loadConfig(cwd = process.cwd(), overrides = {}) {
     sshTargetDir: env.SSH_TARGET_DIR,
     sshUploadMethod: String(env.SSH_UPLOAD_METHOD).toLowerCase(),
     sshPort: env.SSH_PORT ? Number(env.SSH_PORT) : undefined,
+    pdfPrintReady: overrides.printReady ?? parseBoolean(env.PDF_PRINT_READY, 'PDF_PRINT_READY'),
+    pdfBleed: overrides.pdfBleed ?? env.PDF_BLEED,
   };
 
   if (config.sshPort !== undefined && Number.isNaN(config.sshPort)) {
     throw new Error('SSH_PORT must be a valid integer.');
+  }
+
+  if (!/^\d+(?:\.\d+)?(?:mm|cm|in|px)$/.test(String(config.pdfBleed).trim())) {
+    throw new Error('PDF_BLEED must be a CSS length like 3mm, 0.125in, 10px, or 0cm.');
   }
 
   return config;

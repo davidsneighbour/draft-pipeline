@@ -99,6 +99,15 @@ node src/cli.mjs pdf \
   --book-layout-css ./custom/book-layout.css
 ```
 
+Enable print-ready output with bleed:
+
+```bash
+node src/cli.mjs pdf --printready --bleed 3mm
+```
+
+- `--printready` forces print-ready page sizing with bleed margins.
+- `--bleed <length>` overrides `PDF_BLEED` for that run (supports CSS units like `mm`, `cm`, `in`, `px`).
+
 ## Configuration defaults
 
 Defaults are designed for a repository that mirrors this package structure.
@@ -108,6 +117,8 @@ Defaults are designed for a repository that mirrors this package structure.
   - `./templates/footer.html` (`FOOTER_TEMPLATE_PATH`, `--footer-template`)
   - `./templates/document.html` (`DOCUMENT_TEMPLATE_PATH`, `--document-template`)
 - Book layout CSS: `./styles/pdf-book-layout.css` (`BOOK_LAYOUT_CSS_PATH`, `--book-layout-css`)
+- Print-ready PDF mode: disabled (`PDF_PRINT_READY=false`)
+- Print-ready bleed size: `3mm` (`PDF_BLEED`, override via `--bleed` when using `--printready`)
 - Tailwind CSS:
   - input `./styles/pdf.css`
   - output `./dist/output.css`
