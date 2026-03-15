@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.1-rc.2](https://github.com/davidsneighbour/draft-pipeline/compare/v0.1.1-rc.1...v0.1.1-rc.2) (2026-03-15)
+
+### Bug Fixes
+
+* load sample env file from package ([0d4042a](https://github.com/davidsneighbour/draft-pipeline/commit/0d4042af8340c40e8097cfd3301a03de09ec773e))
+
+### Build
+
+* add cspell setup and configuration ([9eebf28](https://github.com/davidsneighbour/draft-pipeline/commit/9eebf28978178924b05331f33d4cfd973865ecac))
+
+### Documentation
+
+* rework README.md ([dd7752a](https://github.com/davidsneighbour/draft-pipeline/commit/dd7752a2d888f9439d496f125ec18f94f7fbf48d))
+
 ## [0.1.1-rc.1](https://github.com/davidsneighbour/draft-pipeline/compare/v0.1.1-rc.0...v0.1.1-rc.1) (2026-03-15)
 
 ### Features
