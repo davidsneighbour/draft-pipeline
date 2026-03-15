@@ -61,16 +61,22 @@ Upload built PDFs to any SSH target and directory.
 
 ```bash
 npm install
-cp .env.example .env
+node src/cli.mjs setup-env
 ```
 
-Use Node.js `--env-file` support to load `.env`, for example:
+By default, the CLI loads `.pipeline.env` from the project root.
+
+Create the demo env file from `.env.example`:
 
 ```bash
-node --env-file=.env src/cli.mjs build
+node src/cli.mjs setup-env
 ```
 
-Or export variables in your shell before running `npm run ...`.
+Load a different env file with `--pipeline-env`:
+
+```bash
+node src/cli.mjs build --pipeline-env ./.env.local
+```
 
 ## Commands
 
@@ -87,6 +93,12 @@ Or with the CLI:
 
 ```bash
 node src/cli.mjs build
+```
+
+Generate a custom env file path:
+
+```bash
+node src/cli.mjs setup-env --pipeline-env ./.env.local
 ```
 
 Override individual template assets for a run:
@@ -112,6 +124,7 @@ node src/cli.mjs pdf --printready --bleed 3mm
 
 Defaults are designed for a repository that mirrors this package structure.
 
+- Env file: `./.pipeline.env` by default (override with `--pipeline-env <path>`).
 - Templates (override via env `*_TEMPLATE_PATH` or CLI flags):
   - `./templates/header.html` (`HEADER_TEMPLATE_PATH`, `--header-template`)
   - `./templates/footer.html` (`FOOTER_TEMPLATE_PATH`, `--footer-template`)

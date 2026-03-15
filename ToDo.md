@@ -2,8 +2,8 @@
 
 ### .env setup
 
-- [ ] create a way to setup a custom `.pipeline.env` with demo content
-- [ ] set `.pipeline.env` as default env file and add a CLI parameter to set path to .env file
+- [x] create a way to setup a custom `.pipeline.env` with demo content
+- [x] set `.pipeline.env` as default env file and add a CLI parameter to set path to .env file
 
 ### Override templates
 

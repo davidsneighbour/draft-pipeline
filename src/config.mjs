@@ -40,8 +40,9 @@ function parseBoolean(value, name) {
   throw new Error(`${name} must be either "true" or "false".`);
 }
 
-export function loadConfig(cwd = process.cwd(), overrides = {}) {
-  const envPath = path.resolve(cwd, '.env');
+export function loadConfig(cwd = process.cwd(), overrides = {}, options = {}) {
+  const envFilePath = options.envFilePath ?? '.pipeline.env';
+  const envPath = path.resolve(cwd, envFilePath);
   if (existsSync(envPath)) {
     process.loadEnvFile(envPath);
   }
