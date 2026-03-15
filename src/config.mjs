@@ -1,8 +1,7 @@
 import { access } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
-import { constants } from 'node:fs';
-import { config as loadDotEnv } from 'dotenv';
+import { constants, existsSync } from 'node:fs';
 
 const DEFAULTS = {
   MARKDOWN_INPUT_DIR: './book',
@@ -21,7 +20,10 @@ const DEFAULTS = {
 };
 
 export function loadConfig(cwd = process.cwd()) {
-  loadDotEnv({ path: path.join(cwd, '.env'), override: false });
+  const envPath = path.resolve(cwd, '.env');
+  if (existsSync(envPath)) {
+    process.loadEnvFile(envPath);
+  }
 
   const env = { ...DEFAULTS, ...process.env };
 

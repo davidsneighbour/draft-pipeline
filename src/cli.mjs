@@ -15,7 +15,7 @@ Commands:
   build   Run css + pdf + upload
 
 Configuration:
-  Configure via .env file (see .env.example).
+  Configure via environment variables or Node.js --env-file (see .env.example).
 `);
 }
 

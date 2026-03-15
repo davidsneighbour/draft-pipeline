@@ -15,8 +15,8 @@
 
 ### Deprecate dotenv usage
 
-- [ ] require Node version that supports native .env integration
-- [ ] use native .env integration instead of dotenv
+- [x] require Node version that supports native .env integration
+- [x] use native .env integration instead of dotenv
 
 ### Add release pipeline via release-it
 

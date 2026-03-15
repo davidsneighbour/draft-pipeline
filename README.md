@@ -38,7 +38,13 @@ npm install
 cp .env.example .env
 ```
 
-Edit `.env` as needed.
+Use Node.js `--env-file` support to load `.env`, for example:
+
+```bash
+node --env-file=.env src/cli.mjs build
+```
+
+Or export variables in your shell before running `npm run ...`.
 
 ## Commands
 
