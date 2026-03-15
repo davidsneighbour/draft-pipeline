@@ -1,7 +1,9 @@
 import type { Config } from 'release-it';
 
 const config = {
-  npm: false,
+  npm: {
+    publish: true,
+  },
   git: {
     requireCleanWorkingDir: true,
     commit: true,
