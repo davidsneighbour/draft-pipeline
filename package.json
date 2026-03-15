@@ -1,6 +1,6 @@
 {
   "name": "@davidsneighbour/draft-pipeline",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Reusable markdown-to-pdf and optional reMarkable upload toolkit",
   "type": "module",
   "bin": {

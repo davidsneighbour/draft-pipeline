@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.0](https://github.com/davidsneighbour/draft-pipeline/compare/v0.2.0...v0.3.0) (2026-03-15)
+
+### Features
+
+* add testing ([8b13322](https://github.com/davidsneighbour/draft-pipeline/commit/8b133223117961245e0ce4e5c597b272105f89ee))
+
 ## [0.2.0](https://github.com/davidsneighbour/draft-pipeline/compare/v0.1.1-rc.2...v0.2.0) (2026-03-15)
 
 ## [0.1.1-rc.2](https://github.com/davidsneighbour/draft-pipeline/compare/v0.1.1-rc.1...v0.1.1-rc.2) (2026-03-15)
