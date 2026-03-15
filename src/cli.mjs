@@ -3,10 +3,14 @@ import { constants } from 'node:fs';
 import { copyFile } from 'node:fs/promises';
 import process from 'node:process';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { getConfigWithSources, loadConfig } from './config.mjs';
 import { buildCss } from './build-css.mjs';
 import { renderMarkdownDirectory } from './md-to-pdf.mjs';
 import { runUploads } from './upload.mjs';
+
+const cliDirectory = path.dirname(fileURLToPath(import.meta.url));
+const packageRoot = path.resolve(cliDirectory, '..');
 
 function printHelp() {
   console.log(`draft-pipeline - A tool to convert markdown files to PDFs and upload them to reMarkable.
@@ -120,7 +124,7 @@ function parseCliArgs(argv) {
 
 async function setupEnvFile(cwd, envFilePath) {
   const targetPath = path.resolve(cwd, envFilePath);
-  const examplePath = path.resolve(cwd, '.env.example');
+  const examplePath = path.resolve(packageRoot, '.env.example');
 
   await copyFile(examplePath, targetPath, constants.COPYFILE_EXCL);
   console.log(`Created env file: ${targetPath}`);
