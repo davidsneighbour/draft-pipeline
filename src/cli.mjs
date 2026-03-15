@@ -14,20 +14,80 @@ Commands:
   upload  Upload generated PDFs to reMarkable (when enabled)
   build   Run css + pdf + upload
 
+Options:
+  --header-template <path>    Override HEADER_TEMPLATE_PATH
+  --footer-template <path>    Override FOOTER_TEMPLATE_PATH
+  --document-template <path>  Override DOCUMENT_TEMPLATE_PATH
+  --book-layout-css <path>    Override BOOK_LAYOUT_CSS_PATH
+
 Configuration:
   Configure via environment variables or Node.js --env-file (see .env.example).
 `);
 }
 
-async function main() {
-  const command = process.argv[2] ?? 'build';
+function readOptionValue(args, i, optionName) {
+  const value = args[i + 1];
+  if (!value || value.startsWith('--')) {
+    throw new Error(`Missing value for ${optionName}`);
+  }
 
-  if (command === '--help' || command === '-h' || command === 'help') {
+  return value;
+}
+
+function parseCliArgs(argv) {
+  const [commandArg, ...rest] = argv;
+
+  if (commandArg === '--help' || commandArg === '-h' || commandArg === 'help') {
+    return { command: 'help', overrides: {} };
+  }
+
+  const command = !commandArg || commandArg.startsWith('--') ? 'build' : commandArg;
+  const optionArgs = commandArg && commandArg.startsWith('--') ? [commandArg, ...rest] : rest;
+
+  const overrides = {};
+
+  for (let i = 0; i < optionArgs.length; i += 1) {
+    const arg = optionArgs[i];
+
+    if (arg === '--header-template') {
+      overrides.headerTemplatePath = readOptionValue(optionArgs, i, arg);
+      i += 1;
+      continue;
+    }
+
+    if (arg === '--footer-template') {
+      overrides.footerTemplatePath = readOptionValue(optionArgs, i, arg);
+      i += 1;
+      continue;
+    }
+
+    if (arg === '--document-template') {
+      overrides.documentTemplatePath = readOptionValue(optionArgs, i, arg);
+      i += 1;
+      continue;
+    }
+
+    if (arg === '--book-layout-css') {
+      overrides.bookLayoutCssPath = readOptionValue(optionArgs, i, arg);
+      i += 1;
+      continue;
+    }
+
+    throw new Error(`Unknown argument: ${arg}`);
+  }
+
+  return { command, overrides };
+}
+
+async function main() {
+  const { command, overrides } = parseCliArgs(process.argv.slice(2));
+
+  if (command === 'help') {
     printHelp();
     return;
   }
 
-  const config = loadConfig(process.cwd());
+  const config = loadConfig(process.cwd(), overrides);
 
   if (command === 'css') {
     await buildCss(config);

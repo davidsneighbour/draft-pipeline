@@ -7,7 +7,7 @@
 
 ### Override templates
 
-- [ ] add options to override each individual template with local path
+- [x] add options to override each individual template with local path
 
 ### Add print ready PDF output
 

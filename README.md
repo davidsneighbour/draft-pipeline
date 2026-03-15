@@ -63,14 +63,25 @@ Or with the CLI:
 node src/cli.mjs build
 ```
 
+Override individual template assets for a run:
+
+```bash
+node src/cli.mjs pdf \
+  --header-template ./custom/header.html \
+  --footer-template ./custom/footer.html \
+  --document-template ./custom/document.html \
+  --book-layout-css ./custom/book-layout.css
+```
+
 ## Configuration defaults
 
 Defaults are designed for a repository that mirrors this package structure.
 
-- Templates:
-  - `./templates/header.html`
-  - `./templates/footer.html`
-  - `./templates/document.html`
+- Templates (override via env `*_TEMPLATE_PATH` or CLI flags):
+  - `./templates/header.html` (`HEADER_TEMPLATE_PATH`, `--header-template`)
+  - `./templates/footer.html` (`FOOTER_TEMPLATE_PATH`, `--footer-template`)
+  - `./templates/document.html` (`DOCUMENT_TEMPLATE_PATH`, `--document-template`)
+- Book layout CSS: `./styles/pdf-book-layout.css` (`BOOK_LAYOUT_CSS_PATH`, `--book-layout-css`)
 - Tailwind CSS:
   - input `./styles/pdf.css`
   - output `./dist/output.css`

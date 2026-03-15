@@ -19,7 +19,7 @@ const DEFAULTS = {
   REMARKABLE_PARENT_FOLDER_NAME: 'Book of Hugo',
 };
 
-export function loadConfig(cwd = process.cwd()) {
+export function loadConfig(cwd = process.cwd(), overrides = {}) {
   const envPath = path.resolve(cwd, '.env');
   if (existsSync(envPath)) {
     process.loadEnvFile(envPath);
@@ -33,10 +33,10 @@ export function loadConfig(cwd = process.cwd()) {
     outputDir: path.resolve(cwd, env.OUTPUT_DIR),
     outputCssFile: path.resolve(cwd, env.OUTPUT_CSS_FILE),
     tailwindInputCss: path.resolve(cwd, env.TAILWIND_INPUT_CSS),
-    headerTemplatePath: path.resolve(cwd, env.HEADER_TEMPLATE_PATH),
-    footerTemplatePath: path.resolve(cwd, env.FOOTER_TEMPLATE_PATH),
-    documentTemplatePath: path.resolve(cwd, env.DOCUMENT_TEMPLATE_PATH),
-    bookLayoutCssPath: path.resolve(cwd, env.BOOK_LAYOUT_CSS_PATH),
+    headerTemplatePath: path.resolve(cwd, overrides.headerTemplatePath ?? env.HEADER_TEMPLATE_PATH),
+    footerTemplatePath: path.resolve(cwd, overrides.footerTemplatePath ?? env.FOOTER_TEMPLATE_PATH),
+    documentTemplatePath: path.resolve(cwd, overrides.documentTemplatePath ?? env.DOCUMENT_TEMPLATE_PATH),
+    bookLayoutCssPath: path.resolve(cwd, overrides.bookLayoutCssPath ?? env.BOOK_LAYOUT_CSS_PATH),
     remarkableUploadEnabled: String(env.REMARKABLE_UPLOAD_ENABLED).toLowerCase() === 'true',
     remarkableHost: env.REMARKABLE_HOST,
     remarkableXochitlDir: env.REMARKABLE_XOCHITL_DIR,
