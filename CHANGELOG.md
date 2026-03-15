@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1-rc.0](https://github.com/davidsneighbour/draft-pipeline/compare/v0.0.1...v0.1.1-rc.0) (2026-03-15)
+
+### Other Changes
+
+* **fix:** enable npm package publishing ([267e186](https://github.com/davidsneighbour/draft-pipeline/commit/267e18692536dc3ea7c978bee7805de8c7336a11))
+* **fix:** make this package public ([41559ea](https://github.com/davidsneighbour/draft-pipeline/commit/41559eaa2c84b4d60c3fefd6ce38a1a8ea2fac29))
+
 ## 0.0.1 (2026-03-15)
 
 ### Other Changes
