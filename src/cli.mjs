@@ -1,16 +1,16 @@
 #!/usr/bin/env node
-import { constants } from 'node:fs';
-import { copyFile } from 'node:fs/promises';
-import process from 'node:process';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { getConfigWithSources, loadConfig } from './config.mjs';
-import { buildCss } from './build-css.mjs';
-import { renderMarkdownDirectory } from './md-to-pdf.mjs';
-import { runUploads } from './upload.mjs';
+import { constants } from "node:fs";
+import { copyFile } from "node:fs/promises";
+import path from "node:path";
+import process from "node:process";
+import { fileURLToPath } from "node:url";
+import { buildCss } from "./build-css.mjs";
+import { getConfigWithSources, loadConfig } from "./config.mjs";
+import { renderMarkdownDirectory } from "./md-to-pdf.mjs";
+import { runUploads } from "./upload.mjs";
 
 const cliDirectory = path.dirname(fileURLToPath(import.meta.url));
-const packageRoot = path.resolve(cliDirectory, '..');
+const packageRoot = path.resolve(cliDirectory, "..");
 
 function printHelp() {
   console.log(`draft-pipeline - A tool to convert markdown files to PDFs and upload them to reMarkable.
@@ -40,7 +40,7 @@ Configuration:
 
 function readOptionValue(args, i, optionName) {
   const value = args[i + 1];
-  if (!value || value.startsWith('--')) {
+  if (!value || value.startsWith("--")) {
     throw new Error(`Missing value for ${optionName}`);
   }
 
@@ -50,67 +50,69 @@ function readOptionValue(args, i, optionName) {
 function parseCliArgs(argv) {
   const [commandArg, ...rest] = argv;
 
-  if (commandArg === '--help' || commandArg === '-h' || commandArg === 'help') {
-    return { command: 'help', overrides: {} };
+  if (commandArg === "--help" || commandArg === "-h" || commandArg === "help") {
+    return { command: "help", overrides: {} };
   }
 
-  const command = !commandArg || commandArg.startsWith('--') ? 'build' : commandArg;
-  const optionArgs = commandArg && commandArg.startsWith('--') ? [commandArg, ...rest] : rest;
+  const command =
+    !commandArg || commandArg.startsWith("--") ? "build" : commandArg;
+  const optionArgs =
+    commandArg && commandArg.startsWith("--") ? [commandArg, ...rest] : rest;
 
   const overrides = {};
 
   for (let i = 0; i < optionArgs.length; i += 1) {
     const arg = optionArgs[i];
 
-    if (arg === '--pipeline-env') {
+    if (arg === "--pipeline-env") {
       overrides.envFilePath = readOptionValue(optionArgs, i, arg);
       i += 1;
       continue;
     }
 
-    if (arg === '--pipeline-config') {
+    if (arg === "--pipeline-config") {
       overrides.configFilePath = readOptionValue(optionArgs, i, arg);
       i += 1;
       continue;
     }
 
-    if (arg === '--print-config' || arg.startsWith('--print-config=')) {
+    if (arg === "--print-config" || arg.startsWith("--print-config=")) {
       overrides.printConfig = true;
-      const format = arg.includes('=') ? arg.split('=')[1] : 'table';
-      overrides.printConfigFormat = format || 'table';
+      const format = arg.includes("=") ? arg.split("=")[1] : "table";
+      overrides.printConfigFormat = format || "table";
       continue;
     }
 
-    if (arg === '--header-template') {
+    if (arg === "--header-template") {
       overrides.headerTemplatePath = readOptionValue(optionArgs, i, arg);
       i += 1;
       continue;
     }
 
-    if (arg === '--footer-template') {
+    if (arg === "--footer-template") {
       overrides.footerTemplatePath = readOptionValue(optionArgs, i, arg);
       i += 1;
       continue;
     }
 
-    if (arg === '--document-template') {
+    if (arg === "--document-template") {
       overrides.documentTemplatePath = readOptionValue(optionArgs, i, arg);
       i += 1;
       continue;
     }
 
-    if (arg === '--book-layout-css') {
+    if (arg === "--book-layout-css") {
       overrides.bookLayoutCssPath = readOptionValue(optionArgs, i, arg);
       i += 1;
       continue;
     }
 
-    if (arg === '--printready') {
+    if (arg === "--printready") {
       overrides.printReady = true;
       continue;
     }
 
-    if (arg === '--bleed') {
+    if (arg === "--bleed") {
       overrides.pdfBleed = readOptionValue(optionArgs, i, arg);
       i += 1;
       continue;
@@ -124,7 +126,7 @@ function parseCliArgs(argv) {
 
 async function setupEnvFile(cwd, envFilePath) {
   const targetPath = path.resolve(cwd, envFilePath);
-  const examplePath = path.resolve(packageRoot, '.env.example');
+  const examplePath = path.resolve(packageRoot, ".env.example");
 
   await copyFile(examplePath, targetPath, constants.COPYFILE_EXCL);
   console.log(`Created env file: ${targetPath}`);
@@ -133,60 +135,78 @@ async function setupEnvFile(cwd, envFilePath) {
 async function main() {
   const { command, overrides } = parseCliArgs(process.argv.slice(2));
 
-  if (command === 'help') {
+  if (command === "help") {
     printHelp();
     return;
   }
 
-  const envFilePath = overrides.envFilePath ?? '.pipeline.env';
+  const envFilePath = overrides.envFilePath ?? ".pipeline.env";
 
-  if (overrides.printConfig && !['json', 'table'].includes(overrides.printConfigFormat)) {
-    throw new Error(`Invalid --print-config format: ${overrides.printConfigFormat}. Use json or table.`);
+  if (
+    overrides.printConfig &&
+    !["json", "table"].includes(overrides.printConfigFormat)
+  ) {
+    throw new Error(
+      `Invalid --print-config format: ${overrides.printConfigFormat}. Use json or table.`,
+    );
   }
 
-  if (command === 'setup-env') {
+  if (command === "setup-env") {
     await setupEnvFile(process.cwd(), envFilePath);
     return;
   }
 
-  const configFilePath = overrides.configFilePath ?? '.pipeline.config.json';
-  const config = await loadConfig(process.cwd(), overrides, { envFilePath, configFilePath });
+  const configFilePath = overrides.configFilePath ?? ".pipeline.config.json";
+  const config = await loadConfig(process.cwd(), overrides, {
+    envFilePath,
+    configFilePath,
+  });
 
   if (overrides.printConfig) {
     const output = getConfigWithSources(config);
 
-    if (overrides.printConfigFormat === 'json') {
-      console.log(JSON.stringify(output, (key, value) => (value === undefined ? null : value), 2));
+    if (overrides.printConfigFormat === "json") {
+      console.log(
+        JSON.stringify(
+          output,
+          (key, value) => (value === undefined ? null : value),
+          2,
+        ),
+      );
     } else {
       const rows = Object.entries(output.values).map(([key, value]) => ({
         key,
-        value: typeof value === 'string' ? value : JSON.stringify(value),
-        source: output.sources[key] ?? 'unknown',
+        value: typeof value === "string" ? value : JSON.stringify(value),
+        source: output.sources[key] ?? "unknown",
       }));
       console.table(rows);
-      console.log(`env file: ${output.files.envFilePath} (${output.files.envFileLoaded ? 'loaded' : 'missing'})`);
-      console.log(`config file: ${output.files.configFilePath} (${output.files.configFileLoaded ? 'loaded' : 'missing'})`);
+      console.log(
+        `env file: ${output.files.envFilePath} (${output.files.envFileLoaded ? "loaded" : "missing"})`,
+      );
+      console.log(
+        `config file: ${output.files.configFilePath} (${output.files.configFileLoaded ? "loaded" : "missing"})`,
+      );
     }
 
     return;
   }
 
-  if (command === 'css') {
+  if (command === "css") {
     await buildCss(config);
     return;
   }
 
-  if (command === 'pdf') {
+  if (command === "pdf") {
     await renderMarkdownDirectory(config, { verbose: true });
     return;
   }
 
-  if (command === 'upload') {
+  if (command === "upload") {
     await runUploads(config);
     return;
   }
 
-  if (command === 'build') {
+  if (command === "build") {
     await buildCss(config);
     await renderMarkdownDirectory(config, { verbose: true });
     await runUploads(config);
@@ -197,6 +217,8 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
+  console.error(
+    `Error: ${error instanceof Error ? error.message : String(error)}`,
+  );
   process.exitCode = 1;
 });
