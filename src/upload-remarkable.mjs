@@ -1,25 +1,13 @@
-import { readdir } from 'node:fs/promises';
-import { basename, join } from 'node:path';
+import { basename } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-
-function ssh(host, args, options = {}) {
-  return spawnSync('ssh', [host, ...args], { encoding: 'utf8', ...options });
-}
-
-function scp(host, localPath, remotePath) {
-  return spawnSync('scp', [localPath, `${host}:${remotePath}`], { stdio: 'inherit' });
-}
-
-function remarkableAvailable(host) {
-  const result = spawnSync('ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=3', host, 'exit'], { stdio: 'ignore' });
-  return result.status === 0;
-}
-
-async function getPdfFiles(outputDir) {
-  const entries = await readdir(outputDir, { withFileTypes: true });
-  return entries.filter((entry) => entry.isFile() && entry.name.endsWith('.pdf')).map((entry) => join(outputDir, entry.name)).sort();
-}
+import {
+  assertSpawnSuccess,
+  getPdfFiles,
+  runScpCopy,
+  runSshCommand,
+  sshAvailable,
+} from './upload-utils.mjs';
 
 function resolveParentId(config) {
   if (config.remarkableParentFolderUuid) {
@@ -42,7 +30,8 @@ for f in *.metadata; do
 done
 `;
 
-  ssh(config.remarkableHost, [script], { stdio: 'inherit' });
+  const result = runSshCommand(config.remarkableHost, [script], { stdio: 'inherit' });
+  assertSpawnSuccess(result, 'Purging reMarkable folder');
 }
 
 function uploadPdf(config, parentId, file) {
@@ -71,21 +60,27 @@ function uploadPdf(config, parentId, file) {
   const tmpMeta = `/tmp/${uuid}.metadata`;
   const tmpContent = `/tmp/${uuid}.content`;
 
-  spawnSync('bash', ['-lc', `cat > ${tmpMeta} <<'JSON'\n${metadata}\nJSON`]);
-  spawnSync('bash', ['-lc', `cat > ${tmpContent} <<'JSON'\n${content}\nJSON`]);
+  assertSpawnSuccess(spawnSync('bash', ['-lc', `cat > ${tmpMeta} <<'JSON'\n${metadata}\nJSON`]), 'Creating metadata file');
+  assertSpawnSuccess(spawnSync('bash', ['-lc', `cat > ${tmpContent} <<'JSON'\n${content}\nJSON`]), 'Creating content file');
 
-  scp(config.remarkableHost, file, `${config.remarkableXochitlDir}/${uuid}.pdf`);
-  scp(config.remarkableHost, tmpMeta, `${config.remarkableXochitlDir}/${uuid}.metadata`);
-  scp(config.remarkableHost, tmpContent, `${config.remarkableXochitlDir}/${uuid}.content`);
+  assertSpawnSuccess(runScpCopy(config.remarkableHost, file, `${config.remarkableXochitlDir}/${uuid}.pdf`), 'Uploading PDF');
+  assertSpawnSuccess(
+    runScpCopy(config.remarkableHost, tmpMeta, `${config.remarkableXochitlDir}/${uuid}.metadata`),
+    'Uploading metadata',
+  );
+  assertSpawnSuccess(
+    runScpCopy(config.remarkableHost, tmpContent, `${config.remarkableXochitlDir}/${uuid}.content`),
+    'Uploading content',
+  );
 }
 
 export async function uploadToRemarkable(config, { purge = true } = {}) {
   if (!config.remarkableUploadEnabled) {
-    console.log('Upload skipped: REMARKABLE_UPLOAD_ENABLED=false');
+    console.log('reMarkable upload skipped: REMARKABLE_UPLOAD_ENABLED=false');
     return;
   }
 
-  if (!remarkableAvailable(config.remarkableHost)) {
+  if (!sshAvailable(config.remarkableHost)) {
     throw new Error(`Cannot reach reMarkable host \`${config.remarkableHost}\` over SSH.`);
   }
 
@@ -101,10 +96,11 @@ export async function uploadToRemarkable(config, { purge = true } = {}) {
   }
 
   for (const file of files) {
-    console.log(`Uploading ${file}`);
+    console.log(`Uploading to reMarkable: ${file}`);
     uploadPdf(config, parentId, file);
   }
 
   console.log('Restarting xochitl...');
-  ssh(config.remarkableHost, ['systemctl restart xochitl'], { stdio: 'inherit' });
+  const restartResult = runSshCommand(config.remarkableHost, ['systemctl restart xochitl'], { stdio: 'inherit' });
+  assertSpawnSuccess(restartResult, 'Restarting xochitl');
 }

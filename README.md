@@ -4,7 +4,7 @@ A standalone package extracted from the `bookofhugo.dev` toolchain for:
 
 1. Markdown → print-style PDF generation.
 2. Tailwind CSS compilation for PDF styling.
-3. Optional upload of built PDFs to a reMarkable tablet over SSH.
+3. Optional upload of built PDFs to reMarkable and/or any SSH destination.
 
 ## Extracted requirements and procedures
 
@@ -18,18 +18,44 @@ A standalone package extracted from the `bookofhugo.dev` toolchain for:
 - Header/footer/document HTML templates are applied with token replacement.
 - Output PDF names are flattened/sanitized from source path segments.
 
-### Upload to reMarkable requirements
+### Upload integrations
 
-- SSH access to a configured reMarkable host (`REMARKABLE_HOST`).
-- Target xochitl data directory (`REMARKABLE_XOCHITL_DIR`).
-- Folder UUID where documents should be attached (`REMARKABLE_PARENT_FOLDER_UUID`).
-- Upload is explicitly toggleable with `REMARKABLE_UPLOAD_ENABLED=true|false`.
+The upload stage is split into isolated integrations that run in parallel as part of the same `upload` command:
+
+- **reMarkable integration** (`REMARKABLE_UPLOAD_ENABLED=true|false`)
+- **Generic SSH integration** (`SSH_UPLOAD_ENABLED=true|false`)
+
+Each integration must be explicitly enabled (`true`) or disabled (`false`).
+
+### reMarkable integration internals
+
+reMarkable does not ingest plain PDF uploads directly into the library. The integration creates companion `.metadata` and `.content` JSON files on the fly for each uploaded PDF, assigns a UUID, copies all files into the xochitl data directory, and finally restarts `xochitl` so the documents appear in the UI.
+
+Practical SSH setup references:
+
+- reMarkable support article for USB web interface / SSH access:
+  https://support.remarkable.com/s/article/USB-web-interface
+- Community SSH setup explanation (host/IP setup, common caveats):
+  https://remarkable.guide/guide/access/ssh.html
+
+Notes:
+
+- USB cable access is often the easiest path for first-time setup.
+- You typically connect by hostname (`remarkable`) via `/etc/hosts` or directly by IP.
+
+### Generic SSH integration
+
+Upload built PDFs to any SSH target and directory.
+
+- `scp` mode uploads one PDF at a time.
+- `rsync` mode uses include/exclude patterns so only `*.pdf` files are transferred.
+- Both modes are available through `SSH_UPLOAD_METHOD=scp|rsync`.
 
 ### Procedure flow
 
 1. Build Tailwind CSS from `TAILWIND_INPUT_CSS` to `OUTPUT_CSS_FILE`.
 2. Convert Markdown files from `MARKDOWN_INPUT_DIR` into PDFs in `OUTPUT_DIR`.
-3. If upload is enabled, upload generated PDFs to reMarkable and restart xochitl.
+3. Run enabled upload integrations.
 
 ## Setup
 
@@ -51,7 +77,7 @@ Or export variables in your shell before running `npm run ...`.
 ```bash
 npm run css      # compile tailwind css
 npm run pdf      # generate PDFs only
-npm run upload   # upload only (if enabled)
+npm run upload   # run all enabled upload integrations
 npm run build    # css + pdf + upload
 npm run release  # create a stable release (git tag + npm + GitHub)
 npm run release:pre # create an rc pre-release
@@ -87,8 +113,9 @@ Defaults are designed for a repository that mirrors this package structure.
   - output `./dist/output.css`
 - Markdown input: `./book`
 - PDF output: `./dist`
-- Upload disabled by default.
+- Upload integrations disabled by default.
 - reMarkable host default: `remarkable`.
+- Generic SSH defaults: `SSH_UPLOAD_METHOD=scp`, no target configured.
 
 ## Graceful errors
 
@@ -96,7 +123,8 @@ The package intentionally fails with direct explanations when:
 
 - input/template/css files are not readable,
 - no markdown files are found,
-- upload is enabled but host is unreachable,
-- upload is enabled but folder UUID is missing,
+- an upload integration is enabled but its host is unreachable,
+- reMarkable upload is enabled but folder UUID is missing,
+- generic SSH upload is enabled but target settings are missing,
 - no PDFs are available for upload,
 - Tailwind build command fails.

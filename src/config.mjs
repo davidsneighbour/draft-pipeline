@@ -17,7 +17,26 @@ const DEFAULTS = {
   REMARKABLE_XOCHITL_DIR: '.local/share/remarkable/xochitl',
   REMARKABLE_PARENT_FOLDER_UUID: '',
   REMARKABLE_PARENT_FOLDER_NAME: 'Book of Hugo',
+  SSH_UPLOAD_ENABLED: 'false',
+  SSH_TARGET: '',
+  SSH_TARGET_DIR: '',
+  SSH_UPLOAD_METHOD: 'scp',
+  SSH_PORT: '',
 };
+
+function parseBoolean(value, name) {
+  const normalizedValue = String(value).toLowerCase();
+
+  if (normalizedValue === 'true') {
+    return true;
+  }
+
+  if (normalizedValue === 'false') {
+    return false;
+  }
+
+  throw new Error(`${name} must be either "true" or "false".`);
+}
 
 export function loadConfig(cwd = process.cwd(), overrides = {}) {
   const envPath = path.resolve(cwd, '.env');
@@ -37,12 +56,21 @@ export function loadConfig(cwd = process.cwd(), overrides = {}) {
     footerTemplatePath: path.resolve(cwd, overrides.footerTemplatePath ?? env.FOOTER_TEMPLATE_PATH),
     documentTemplatePath: path.resolve(cwd, overrides.documentTemplatePath ?? env.DOCUMENT_TEMPLATE_PATH),
     bookLayoutCssPath: path.resolve(cwd, overrides.bookLayoutCssPath ?? env.BOOK_LAYOUT_CSS_PATH),
-    remarkableUploadEnabled: String(env.REMARKABLE_UPLOAD_ENABLED).toLowerCase() === 'true',
+    remarkableUploadEnabled: parseBoolean(env.REMARKABLE_UPLOAD_ENABLED, 'REMARKABLE_UPLOAD_ENABLED'),
     remarkableHost: env.REMARKABLE_HOST,
     remarkableXochitlDir: env.REMARKABLE_XOCHITL_DIR,
     remarkableParentFolderUuid: env.REMARKABLE_PARENT_FOLDER_UUID,
     remarkableParentFolderName: env.REMARKABLE_PARENT_FOLDER_NAME,
+    sshUploadEnabled: parseBoolean(env.SSH_UPLOAD_ENABLED, 'SSH_UPLOAD_ENABLED'),
+    sshTarget: env.SSH_TARGET,
+    sshTargetDir: env.SSH_TARGET_DIR,
+    sshUploadMethod: String(env.SSH_UPLOAD_METHOD).toLowerCase(),
+    sshPort: env.SSH_PORT ? Number(env.SSH_PORT) : undefined,
   };
+
+  if (config.sshPort !== undefined && Number.isNaN(config.sshPort)) {
+    throw new Error('SSH_PORT must be a valid integer.');
+  }
 
   return config;
 }

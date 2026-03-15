@@ -3,7 +3,7 @@ import process from 'node:process';
 import { loadConfig } from './config.mjs';
 import { buildCss } from './build-css.mjs';
 import { renderMarkdownDirectory } from './md-to-pdf.mjs';
-import { uploadToRemarkable } from './upload-remarkable.mjs';
+import { runUploads } from './upload.mjs';
 
 function printHelp() {
   console.log(`draft-pipeline - A tool to convert markdown files to PDFs and upload them to reMarkable.
@@ -11,7 +11,7 @@ function printHelp() {
 Commands:
   css     Build Tailwind CSS
   pdf     Convert markdown files to PDFs
-  upload  Upload generated PDFs to reMarkable (when enabled)
+  upload  Upload generated PDFs via enabled integrations (reMarkable and/or SSH)
   build   Run css + pdf + upload
 
 Options:
@@ -100,14 +100,14 @@ async function main() {
   }
 
   if (command === 'upload') {
-    await uploadToRemarkable(config);
+    await runUploads(config);
     return;
   }
 
   if (command === 'build') {
     await buildCss(config);
     await renderMarkdownDirectory(config, { verbose: true });
-    await uploadToRemarkable(config);
+    await runUploads(config);
     return;
   }
 
