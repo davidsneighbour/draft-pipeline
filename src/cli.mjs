@@ -3,7 +3,7 @@ import { constants } from 'node:fs';
 import { copyFile } from 'node:fs/promises';
 import process from 'node:process';
 import path from 'node:path';
-import { loadConfig } from './config.mjs';
+import { getConfigWithSources, loadConfig } from './config.mjs';
 import { buildCss } from './build-css.mjs';
 import { renderMarkdownDirectory } from './md-to-pdf.mjs';
 import { runUploads } from './upload.mjs';
@@ -19,16 +19,18 @@ Commands:
   setup-env  Create a demo .pipeline.env file
 
 Options:
-  --pipeline-env <path>           Path to env file (default: .pipeline.env)
+  --pipeline-env <path>        Path to env file (default: .pipeline.env)
+  --pipeline-config <path>     Path to config JSON file (default: .pipeline.config.json)
   --header-template <path>    Override HEADER_TEMPLATE_PATH
   --footer-template <path>    Override FOOTER_TEMPLATE_PATH
   --document-template <path>  Override DOCUMENT_TEMPLATE_PATH
   --book-layout-css <path>    Override BOOK_LAYOUT_CSS_PATH
   --printready                Enable print-ready PDF output with bleed area
   --bleed <length>            Override PDF_BLEED (used with --printready)
+  --print-config[=<format>]   Print resolved config and exit (format: json|table, default: table)
 
 Configuration:
-  Configure via .pipeline.env by default, or pass --pipeline-env <path>.
+  Resolution order: env -> config file -> CLI (later sources override earlier).
 `);
 }
 
@@ -59,6 +61,19 @@ function parseCliArgs(argv) {
     if (arg === '--pipeline-env') {
       overrides.envFilePath = readOptionValue(optionArgs, i, arg);
       i += 1;
+      continue;
+    }
+
+    if (arg === '--pipeline-config') {
+      overrides.configFilePath = readOptionValue(optionArgs, i, arg);
+      i += 1;
+      continue;
+    }
+
+    if (arg === '--print-config' || arg.startsWith('--print-config=')) {
+      overrides.printConfig = true;
+      const format = arg.includes('=') ? arg.split('=')[1] : 'table';
+      overrides.printConfigFormat = format || 'table';
       continue;
     }
 
@@ -121,12 +136,36 @@ async function main() {
 
   const envFilePath = overrides.envFilePath ?? '.pipeline.env';
 
+  if (overrides.printConfig && !['json', 'table'].includes(overrides.printConfigFormat)) {
+    throw new Error(`Invalid --print-config format: ${overrides.printConfigFormat}. Use json or table.`);
+  }
+
   if (command === 'setup-env') {
     await setupEnvFile(process.cwd(), envFilePath);
     return;
   }
 
-  const config = loadConfig(process.cwd(), overrides, { envFilePath });
+  const configFilePath = overrides.configFilePath ?? '.pipeline.config.json';
+  const config = await loadConfig(process.cwd(), overrides, { envFilePath, configFilePath });
+
+  if (overrides.printConfig) {
+    const output = getConfigWithSources(config);
+
+    if (overrides.printConfigFormat === 'json') {
+      console.log(JSON.stringify(output, (key, value) => (value === undefined ? null : value), 2));
+    } else {
+      const rows = Object.entries(output.values).map(([key, value]) => ({
+        key,
+        value: typeof value === 'string' ? value : JSON.stringify(value),
+        source: output.sources[key] ?? 'unknown',
+      }));
+      console.table(rows);
+      console.log(`env file: ${output.files.envFilePath} (${output.files.envFileLoaded ? 'loaded' : 'missing'})`);
+      console.log(`config file: ${output.files.configFilePath} (${output.files.configFileLoaded ? 'loaded' : 'missing'})`);
+    }
+
+    return;
+  }
 
   if (command === 'css') {
     await buildCss(config);

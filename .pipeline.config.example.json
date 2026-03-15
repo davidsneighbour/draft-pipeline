@@ -1,0 +1,22 @@
+{
+  "markdownInputDir": "./book",
+  "outputDir": "./dist",
+  "outputCssFile": "./dist/output.css",
+  "tailwindInputCss": "./styles/pdf.css",
+  "headerTemplatePath": "./templates/header.html",
+  "footerTemplatePath": "./templates/footer.html",
+  "documentTemplatePath": "./templates/document.html",
+  "bookLayoutCssPath": "./styles/pdf-book-layout.css",
+  "remarkableUploadEnabled": false,
+  "remarkableHost": "remarkable",
+  "remarkableXochitlDir": ".local/share/remarkable/xochitl",
+  "remarkableParentFolderUuid": "",
+  "remarkableParentFolderName": "Book of Hugo",
+  "sshUploadEnabled": false,
+  "sshTarget": "",
+  "sshTargetDir": "",
+  "sshUploadMethod": "scp",
+  "sshPort": null,
+  "pdfPrintReady": false,
+  "pdfBleed": "3mm"
+}

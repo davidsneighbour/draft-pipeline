@@ -29,18 +29,18 @@
 
 ### Fix/Add config order
 
-- [ ] make sure that all configuration can be done via .env file AND config file AND CLI parameters (overrides in that order)
-- [ ] make debuggable from where we receive the configuration (env, config, cli)
-- [ ] make config debuggable (output list or json)
+- [x] make sure that all configuration can be done via .env file AND config file AND CLI parameters (overrides in that order)
+- [x] make debuggable from where we receive the configuration (env, config, cli)
+- [x] make config debuggable (output list or json)
 
 ### Documentation
 
-- [ ] add section explaining how to configure (env vs. config vs. cli)
-- [ ] add section explaining all parameters (CLI, add env and config names as note to each parameter)
+- [x] add section explaining how to configure (env vs. config vs. cli)
+- [x] add section explaining all parameters (CLI, add env and config names as note to each parameter)
 
 ### Sensible configuration defaults
 
-- [ ] add and document sensible configuration defaults for all options
+- [x] add and document sensible configuration defaults for all options
 
 ### Isolate reMarkable integration
 

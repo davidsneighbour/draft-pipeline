@@ -64,19 +64,21 @@ npm install
 node src/cli.mjs setup-env
 ```
 
-By default, the CLI loads `.pipeline.env` from the project root.
+By default, the CLI loads `./.pipeline.env` and optionally `./.pipeline.config.json`.
 
-Create the demo env file from `.env.example`:
+Create a demo env file from `.env.example`:
 
 ```bash
 node src/cli.mjs setup-env
 ```
 
-Load a different env file with `--pipeline-env`:
+Load a different env file and config file:
 
 ```bash
-node src/cli.mjs build --pipeline-env ./.env.local
+node src/cli.mjs build --pipeline-env ./.env.local --pipeline-config ./.pipeline.config.json
 ```
+
+A full config example is available as `.pipeline.config.example.json`.
 
 ## Commands
 
@@ -95,51 +97,72 @@ Or with the CLI:
 node src/cli.mjs build
 ```
 
-Generate a custom env file path:
+## Configuration
+
+Configuration is resolved in this strict order:
+
+1. Environment variables (`.pipeline.env` by default)
+2. JSON config file (`.pipeline.config.json` by default)
+3. CLI flags
+
+Later sources override earlier ones.
+
+### Debug resolved configuration
+
+Print the final resolved configuration and where each value came from:
 
 ```bash
-node src/cli.mjs setup-env --pipeline-env ./.env.local
+node src/cli.mjs build --print-config
+node src/cli.mjs build --print-config=json
 ```
 
-Override individual template assets for a run:
+### CLI options
 
-```bash
-node src/cli.mjs pdf \
-  --header-template ./custom/header.html \
-  --footer-template ./custom/footer.html \
-  --document-template ./custom/document.html \
-  --book-layout-css ./custom/book-layout.css
-```
+- `--pipeline-env <path>`: env file path (default: `.pipeline.env`)
+- `--pipeline-config <path>`: JSON config file path (default: `.pipeline.config.json`)
+- `--header-template <path>`: override header template path
+- `--footer-template <path>`: override footer template path
+- `--document-template <path>`: override document template path
+- `--book-layout-css <path>`: override book layout CSS path
+- `--printready`: force print-ready output
+- `--bleed <length>`: override bleed size (e.g. `3mm`, `0.125in`)
+- `--print-config[=table|json]`: show resolved config and source mapping, then exit
 
-Enable print-ready output with bleed:
+### Parameter reference (CLI / env / config)
 
-```bash
-node src/cli.mjs pdf --printready --bleed 3mm
-```
+| Purpose | CLI | Env | Config key | Default |
+| --- | --- | --- | --- | --- |
+| Markdown input dir | — | `MARKDOWN_INPUT_DIR` | `markdownInputDir` | `./book` |
+| Output dir | — | `OUTPUT_DIR` | `outputDir` | `./dist` |
+| Output CSS file | — | `OUTPUT_CSS_FILE` | `outputCssFile` | `./dist/output.css` |
+| Tailwind input CSS | — | `TAILWIND_INPUT_CSS` | `tailwindInputCss` | `./styles/pdf.css` |
+| Header template | `--header-template` | `HEADER_TEMPLATE_PATH` | `headerTemplatePath` | `./templates/header.html` |
+| Footer template | `--footer-template` | `FOOTER_TEMPLATE_PATH` | `footerTemplatePath` | `./templates/footer.html` |
+| Document template | `--document-template` | `DOCUMENT_TEMPLATE_PATH` | `documentTemplatePath` | `./templates/document.html` |
+| Book layout CSS | `--book-layout-css` | `BOOK_LAYOUT_CSS_PATH` | `bookLayoutCssPath` | `./styles/pdf-book-layout.css` |
+| Print ready mode | `--printready` | `PDF_PRINT_READY` | `pdfPrintReady` | `false` |
+| PDF bleed | `--bleed` | `PDF_BLEED` | `pdfBleed` | `3mm` |
+| Enable reMarkable upload | — | `REMARKABLE_UPLOAD_ENABLED` | `remarkableUploadEnabled` | `false` |
+| reMarkable host | — | `REMARKABLE_HOST` | `remarkableHost` | `remarkable` |
+| reMarkable xochitl dir | — | `REMARKABLE_XOCHITL_DIR` | `remarkableXochitlDir` | `.local/share/remarkable/xochitl` |
+| reMarkable parent folder UUID | — | `REMARKABLE_PARENT_FOLDER_UUID` | `remarkableParentFolderUuid` | empty |
+| reMarkable parent folder display name | — | `REMARKABLE_PARENT_FOLDER_NAME` | `remarkableParentFolderName` | `Book of Hugo` |
+| Enable SSH upload | — | `SSH_UPLOAD_ENABLED` | `sshUploadEnabled` | `false` |
+| SSH target (`user@host`) | — | `SSH_TARGET` | `sshTarget` | empty |
+| SSH target dir | — | `SSH_TARGET_DIR` | `sshTargetDir` | empty |
+| SSH upload method | — | `SSH_UPLOAD_METHOD` | `sshUploadMethod` | `scp` |
+| SSH port | — | `SSH_PORT` | `sshPort` | unset |
 
-- `--printready` forces print-ready page sizing with bleed margins.
-- `--bleed <length>` overrides `PDF_BLEED` for that run (supports CSS units like `mm`, `cm`, `in`, `px`).
+### Sensible defaults
 
-## Configuration defaults
+Defaults are chosen to make local development work out-of-the-box with this repository layout:
 
-Defaults are designed for a repository that mirrors this package structure.
-
-- Env file: `./.pipeline.env` by default (override with `--pipeline-env <path>`).
-- Templates (override via env `*_TEMPLATE_PATH` or CLI flags):
-  - `./templates/header.html` (`HEADER_TEMPLATE_PATH`, `--header-template`)
-  - `./templates/footer.html` (`FOOTER_TEMPLATE_PATH`, `--footer-template`)
-  - `./templates/document.html` (`DOCUMENT_TEMPLATE_PATH`, `--document-template`)
-- Book layout CSS: `./styles/pdf-book-layout.css` (`BOOK_LAYOUT_CSS_PATH`, `--book-layout-css`)
-- Print-ready PDF mode: disabled (`PDF_PRINT_READY=false`)
-- Print-ready bleed size: `3mm` (`PDF_BLEED`, override via `--bleed` when using `--printready`)
-- Tailwind CSS:
-  - input `./styles/pdf.css`
-  - output `./dist/output.css`
-- Markdown input: `./book`
-- PDF output: `./dist`
-- Upload integrations disabled by default.
-- reMarkable host default: `remarkable`.
-- Generic SSH defaults: `SSH_UPLOAD_METHOD=scp`, no target configured.
+- source markdown from `./book`
+- write build artifacts to `./dist`
+- use repository-provided templates and CSS
+- disable all uploads by default for safe local runs
+- use `scp` for SSH uploads unless explicitly changed
+- keep print-ready mode disabled unless explicitly enabled
 
 ## Graceful errors
 
