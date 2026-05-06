@@ -70,6 +70,24 @@ function getPdfRenderSettings(config) {
   };
 }
 
+function uniqueOutputName(outputName, used) {
+  if (!used.has(outputName)) {
+    used.add(outputName);
+    return outputName;
+  }
+
+  const parsed = path.parse(outputName);
+  let index = 2;
+
+  while (used.has(`${parsed.name}-${index}${parsed.ext}`)) {
+    index += 1;
+  }
+
+  const uniqueName = `${parsed.name}-${index}${parsed.ext}`;
+  used.add(uniqueName);
+  return uniqueName;
+}
+
 async function buildJobs(inputDir, outputDir) {
   const files = await fg(['**/*.md', '**/*.markdown'], {
     cwd: inputDir,
@@ -77,11 +95,15 @@ async function buildJobs(inputDir, outputDir) {
     absolute: true,
   });
 
+  return buildJobsForFiles(files.sort(), outputDir, (absolutePath) => path.relative(inputDir, absolutePath));
+}
+
+async function buildJobsForFiles(files, outputDir, getRelativePath = (file) => path.basename(file)) {
   const used = new Set();
   const jobs = [];
 
-  for (const absolutePath of files.sort()) {
-    const relativePath = path.relative(inputDir, absolutePath);
+  for (const absolutePath of files) {
+    const relativePath = getRelativePath(absolutePath);
     const parsed = matter(await readFile(absolutePath, 'utf8'));
 
     if (shouldIgnorePdf(parsed.data)) {
@@ -90,24 +112,29 @@ async function buildJobs(inputDir, outputDir) {
 
     const sourceName = path.basename(relativePath, path.extname(relativePath));
     const title = typeof parsed.data?.title === 'string' ? parsed.data.title.trim() || sourceName : sourceName;
+    const outputName = uniqueOutputName(buildFlatPdfFileName(relativePath), used);
 
-    let outputName = buildFlatPdfFileName(relativePath);
-    if (used.has(outputName)) {
-      const p = path.parse(outputName);
-      let i = 2;
-      while (used.has(`${p.name}-${i}${p.ext}`)) i += 1;
-      outputName = `${p.name}-${i}${p.ext}`;
-    }
-
-    used.add(outputName);
-    jobs.push({ absolutePath, title, outputPdfPath: path.join(outputDir, outputName), fileName: path.basename(relativePath) });
+    jobs.push({
+      absolutePath,
+      title,
+      outputPdfPath: path.join(outputDir, outputName),
+      fileName: path.basename(relativePath),
+    });
   }
 
   return jobs;
 }
 
-export async function renderMarkdownDirectory(config, { verbose = false } = {}) {
-  await assertReadableDir(config.markdownInputDir, 'Markdown input directory');
+async function readOptionalThemeCss(config) {
+  if (!config.themeCssPath) {
+    return '';
+  }
+
+  await assertReadableFile(config.themeCssPath, 'Theme CSS file');
+  return readFile(config.themeCssPath, 'utf8');
+}
+
+async function renderJobs(config, jobs, { verbose = false } = {}) {
   await assertReadableFile(config.outputCssFile, 'Compiled CSS file');
   await assertReadableFile(config.bookLayoutCssPath, 'Book layout CSS file');
   await assertReadableFile(config.documentTemplatePath, 'Document template');
@@ -116,24 +143,26 @@ export async function renderMarkdownDirectory(config, { verbose = false } = {}) 
 
   await mkdir(config.outputDir, { recursive: true });
 
-  const [css, bookCss, htmlTemplate, headerTemplate, footerTemplate] = await Promise.all([
+  const [css, bookCss, themeCss, htmlTemplate, headerTemplate, footerTemplate] = await Promise.all([
     readFile(config.outputCssFile, 'utf8'),
     readFile(config.bookLayoutCssPath, 'utf8'),
+    readOptionalThemeCss(config),
     readFile(config.documentTemplatePath, 'utf8'),
     readFile(config.headerTemplatePath, 'utf8'),
     readFile(config.footerTemplatePath, 'utf8'),
   ]);
 
-  const jobs = await buildJobs(config.markdownInputDir, config.outputDir);
   const renderSettings = getPdfRenderSettings(config);
+
   if (jobs.length === 0) {
-    throw new Error(`No markdown files found in ${config.markdownInputDir}. Add *.md files or change MARKDOWN_INPUT_DIR.`);
+    throw new Error('No renderable markdown files found. Files with b/pdf/ignore: true are skipped.');
   }
 
   if (verbose) {
-    console.log(`Rendering ${jobs.length} markdown file(s) from ${config.markdownInputDir}`);
+    console.log(`Rendering ${jobs.length} markdown file(s).`);
   }
 
+  const createdPdfPaths = [];
   const browser = await chromium.launch({ headless: true });
   try {
     for (const job of jobs) {
@@ -141,7 +170,7 @@ export async function renderMarkdownDirectory(config, { verbose = false } = {}) 
       const htmlBody = marked.parse(parsed.content, { gfm: true, breaks: false });
       const html = applyTemplate(htmlTemplate, {
         documentTitle: escapeHtml(job.title),
-        css: `${css}\n${bookCss}`,
+        css: `${css}\n${bookCss}\n${themeCss}`,
         htmlBody,
         marginTop: renderSettings.marginTop,
         marginBottom: renderSettings.marginBottom,
@@ -175,9 +204,40 @@ export async function renderMarkdownDirectory(config, { verbose = false } = {}) 
         await page.close();
       }
 
+      createdPdfPaths.push(job.outputPdfPath);
       console.log(`Created PDF: ${job.outputPdfPath}`);
     }
   } finally {
     await browser.close();
   }
+
+  return createdPdfPaths;
+}
+
+export async function renderMarkdownFiles(config, files, { verbose = false } = {}) {
+  const absoluteFiles = files.map((file) => path.resolve(config.cwd, file));
+
+  for (const file of absoluteFiles) {
+    await assertReadableFile(file, 'Markdown file');
+  }
+
+  await mkdir(config.outputDir, { recursive: true });
+  const jobs = await buildJobsForFiles(absoluteFiles, config.outputDir);
+
+  return renderJobs(config, jobs, { verbose });
+}
+
+export async function renderMarkdownDirectory(config, { verbose = false } = {}) {
+  await assertReadableDir(config.markdownInputDir, 'Markdown input directory');
+
+  const jobs = await buildJobs(config.markdownInputDir, config.outputDir);
+  if (jobs.length === 0) {
+    throw new Error(`No markdown files found in ${config.markdownInputDir}. Add *.md files or change MARKDOWN_INPUT_DIR.`);
+  }
+
+  if (verbose) {
+    console.log(`Rendering markdown files from ${config.markdownInputDir}`);
+  }
+
+  return renderJobs(config, jobs, { verbose });
 }
