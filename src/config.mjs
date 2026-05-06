@@ -12,6 +12,7 @@ const DEFAULTS = {
   FOOTER_TEMPLATE_PATH: "./templates/footer.html",
   DOCUMENT_TEMPLATE_PATH: "./templates/document.html",
   BOOK_LAYOUT_CSS_PATH: "./styles/pdf-book-layout.css",
+  THEME_CSS_PATH: "",
   REMARKABLE_UPLOAD_ENABLED: "false",
   REMARKABLE_HOST: "remarkable",
   REMARKABLE_XOCHITL_DIR: ".local/share/remarkable/xochitl",
@@ -80,6 +81,13 @@ const CONFIG_FIELDS = [
     configKey: "bookLayoutCssPath",
     path: true,
     cliKey: "bookLayoutCssPath",
+  },
+  {
+    key: "themeCssPath",
+    envKey: "THEME_CSS_PATH",
+    configKey: "themeCssPath",
+    path: true,
+    cliKey: "themeCssPath",
   },
   {
     key: "remarkableUploadEnabled",
@@ -174,6 +182,18 @@ function parseBoolean(value, name) {
   throw new Error(`${name} must be either "true" or "false".`);
 }
 
+function resolveConfigValue(cwd, value, isPath) {
+  if (!isPath) {
+    return value;
+  }
+
+  if (value === "" || value === undefined || value === null) {
+    return "";
+  }
+
+  return path.resolve(cwd, value);
+}
+
 export async function loadConfig(
   cwd = process.cwd(),
   overrides = {},
@@ -215,9 +235,7 @@ export async function loadConfig(
     }
 
     const parsedValue = field.parser ? field.parser(value) : value;
-    config[field.key] = field.path
-      ? path.resolve(cwd, parsedValue)
-      : parsedValue;
+    config[field.key] = resolveConfigValue(cwd, parsedValue, field.path);
     configSources[field.key] = source;
   }
 
