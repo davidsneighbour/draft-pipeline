@@ -7,6 +7,7 @@
   "footerTemplatePath": "./templates/footer.html",
   "documentTemplatePath": "./templates/document.html",
   "bookLayoutCssPath": "./styles/pdf-book-layout.css",
+  "themeCssPath": "",
   "remarkableUploadEnabled": false,
   "remarkableHost": "remarkable",
   "remarkableXochitlDir": ".local/share/remarkable/xochitl",
