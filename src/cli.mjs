@@ -18,7 +18,7 @@ function printHelp() {
   console.log(`draft-pipeline - A tool to convert markdown files to PDFs and upload them to reMarkable.
 
 Commands:
-  draft <file>  Convert one markdown file to PDF and optionally upload it to reMarkable
+  draft <file>  Convert one markdown file to PDF and upload it to reMarkable
   css           Build Tailwind CSS
   pdf           Convert markdown files to PDFs
   upload        Upload generated PDFs via enabled integrations (reMarkable and/or SSH)
@@ -40,16 +40,16 @@ Options:
   --print-config[=<format>]    Print resolved config and exit (format: json|table, default: table)
 
 Draft command options:
-  --upload                     Upload the generated PDF to reMarkable
-  --no-upload                  Do not upload the generated PDF (default)
+  --upload                     Upload the generated PDF to reMarkable (default)
+  --no-upload                  Do not upload the generated PDF
   --purge                      Purge the target reMarkable folder before uploading
   --no-purge                   Do not purge the target reMarkable folder before uploading (default)
 
 Examples:
   draft markdown.md
-  draft markdown.md --upload
-  draft markdown.md --theme remarkable-edit --upload
-  draft-pipeline draft markdown.md --upload
+  draft markdown.md --no-upload
+  draft markdown.md --theme remarkable-edit
+  draft-pipeline draft markdown.md
 
 Configuration:
   Resolution order: env -> config file -> CLI (later sources override earlier).
@@ -281,8 +281,8 @@ async function runDraftCommand(files, rawOverrides) {
 
   const createdPdfPaths = await renderMarkdownFiles(config, files, { verbose: true });
 
-  if (!draftUpload) {
-    console.log("reMarkable upload skipped. Use --upload to transfer the generated PDF.");
+  if (draftUpload === false) {
+    console.log("reMarkable upload skipped because --no-upload was used.");
     return;
   }
 
