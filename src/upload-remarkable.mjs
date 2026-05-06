@@ -100,7 +100,7 @@ function uploadPdf(config, parentId, file) {
   );
 }
 
-export async function uploadToRemarkable(config, { purge = true } = {}) {
+export async function uploadToRemarkable(config, { purge = true, files } = {}) {
   if (!config.remarkableUploadEnabled) {
     console.log("reMarkable upload skipped: REMARKABLE_UPLOAD_ENABLED=false");
     return;
@@ -112,8 +112,8 @@ export async function uploadToRemarkable(config, { purge = true } = {}) {
     );
   }
 
-  const files = await getPdfFiles(config.outputDir);
-  if (files.length === 0) {
+  const pdfFiles = files ?? (await getPdfFiles(config.outputDir));
+  if (pdfFiles.length === 0) {
     throw new Error(
       `No PDF files found in ${config.outputDir}. Run build first.`,
     );
@@ -125,7 +125,7 @@ export async function uploadToRemarkable(config, { purge = true } = {}) {
     purgeFolder(config, parentId);
   }
 
-  for (const file of files) {
+  for (const file of pdfFiles) {
     console.log(`Uploading to reMarkable: ${file}`);
     uploadPdf(config, parentId, file);
   }
