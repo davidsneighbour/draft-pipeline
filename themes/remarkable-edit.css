@@ -1,0 +1,38 @@
+:root {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 19px;
+  line-height: 2;
+}
+
+body {
+  line-height: 2;
+}
+
+main.document {
+  line-height: 2;
+}
+
+main.document p,
+main.document li,
+main.document blockquote,
+main.document td,
+main.document th {
+  line-height: 2;
+}
+
+main.document h1,
+main.document h2,
+main.document h3,
+main.document h4,
+main.document h5,
+main.document h6 {
+  line-height: 1.35;
+}
+
+main.document p {
+  margin-block-end: 1.15rem;
+}
+
+main.document li + li {
+  margin-block-start: 0.5rem;
+}
