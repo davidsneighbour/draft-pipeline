@@ -6,8 +6,9 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { buildCss } from "./build-css.mjs";
 import { getConfigWithSources, loadConfig } from "./config.mjs";
-import { renderMarkdownDirectory } from "./md-to-pdf.mjs";
+import { renderMarkdownDirectory, renderMarkdownFiles } from "./md-to-pdf.mjs";
 import { runUploads } from "./upload.mjs";
+import { uploadToRemarkable } from "./upload-remarkable.mjs";
 
 const cliDirectory = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(cliDirectory, "..");
@@ -16,22 +17,37 @@ function printHelp() {
   console.log(`draft-pipeline - A tool to convert markdown files to PDFs and upload them to reMarkable.
 
 Commands:
-  css        Build Tailwind CSS
-  pdf        Convert markdown files to PDFs
-  upload     Upload generated PDFs via enabled integrations (reMarkable and/or SSH)
-  build      Run css + pdf + upload
-  setup-env  Create a demo .pipeline.env file
+  draft <file>  Convert one markdown file to PDF and optionally upload it to reMarkable
+  css           Build Tailwind CSS
+  pdf           Convert markdown files to PDFs
+  upload        Upload generated PDFs via enabled integrations (reMarkable and/or SSH)
+  build         Run css + pdf + upload
+  setup-env     Create a demo .pipeline.env file
 
 Options:
   --pipeline-env <path>        Path to env file (default: .pipeline.env)
   --pipeline-config <path>     Path to config JSON file (default: .pipeline.config.json)
-  --header-template <path>    Override HEADER_TEMPLATE_PATH
-  --footer-template <path>    Override FOOTER_TEMPLATE_PATH
-  --document-template <path>  Override DOCUMENT_TEMPLATE_PATH
-  --book-layout-css <path>    Override BOOK_LAYOUT_CSS_PATH
-  --printready                Enable print-ready PDF output with bleed area
-  --bleed <length>            Override PDF_BLEED (used with --printready)
-  --print-config[=<format>]   Print resolved config and exit (format: json|table, default: table)
+  --header-template <path>     Override HEADER_TEMPLATE_PATH
+  --footer-template <path>     Override FOOTER_TEMPLATE_PATH
+  --document-template <path>   Override DOCUMENT_TEMPLATE_PATH
+  --book-layout-css <path>     Override BOOK_LAYOUT_CSS_PATH
+  --theme-css <path>           Add a theme CSS layer after the base and layout CSS
+  --theme <name>               Use a bundled theme (initial value: remarkable-edit)
+  --output-dir <path>          Override OUTPUT_DIR
+  --printready                 Enable print-ready PDF output with bleed area
+  --bleed <length>             Override PDF_BLEED (used with --printready)
+  --print-config[=<format>]    Print resolved config and exit (format: json|table, default: table)
+
+Draft command options:
+  --upload                     Upload the generated PDF to reMarkable
+  --no-upload                  Do not upload the generated PDF
+  --purge                      Purge the target reMarkable folder before uploading
+  --no-purge                   Do not purge the target reMarkable folder before uploading (default)
+
+Examples:
+  draft markdown.md
+  draft markdown.md --upload
+  draft markdown.md --theme remarkable-edit --upload
 
 Configuration:
   Resolution order: env -> config file -> CLI (later sources override earlier).
@@ -47,11 +63,24 @@ function readOptionValue(args, i, optionName) {
   return value;
 }
 
+function getBundledThemePath(themeName) {
+  const themes = new Map([
+    ["remarkable-edit", path.resolve(packageRoot, "themes/remarkable-edit.css")],
+  ]);
+
+  const themePath = themes.get(themeName);
+  if (!themePath) {
+    throw new Error(`Unknown theme: ${themeName}. Available themes: ${[...themes.keys()].join(", ")}.`);
+  }
+
+  return themePath;
+}
+
 function parseCliArgs(argv) {
   const [commandArg, ...rest] = argv;
 
   if (commandArg === "--help" || commandArg === "-h" || commandArg === "help") {
-    return { command: "help", overrides: {} };
+    return { command: "help", overrides: {}, files: [] };
   }
 
   const command =
@@ -60,6 +89,7 @@ function parseCliArgs(argv) {
     commandArg && commandArg.startsWith("--") ? [commandArg, ...rest] : rest;
 
   const overrides = {};
+  const files = [];
 
   for (let i = 0; i < optionArgs.length; i += 1) {
     const arg = optionArgs[i];
@@ -107,6 +137,24 @@ function parseCliArgs(argv) {
       continue;
     }
 
+    if (arg === "--theme-css") {
+      overrides.themeCssPath = readOptionValue(optionArgs, i, arg);
+      i += 1;
+      continue;
+    }
+
+    if (arg === "--theme") {
+      overrides.themeCssPath = getBundledThemePath(readOptionValue(optionArgs, i, arg));
+      i += 1;
+      continue;
+    }
+
+    if (arg === "--output-dir") {
+      overrides.outputDir = readOptionValue(optionArgs, i, arg);
+      i += 1;
+      continue;
+    }
+
     if (arg === "--printready") {
       overrides.printReady = true;
       continue;
@@ -118,10 +166,34 @@ function parseCliArgs(argv) {
       continue;
     }
 
-    throw new Error(`Unknown argument: ${arg}`);
+    if (arg === "--upload") {
+      overrides.draftUpload = true;
+      continue;
+    }
+
+    if (arg === "--no-upload") {
+      overrides.draftUpload = false;
+      continue;
+    }
+
+    if (arg === "--purge") {
+      overrides.draftPurge = true;
+      continue;
+    }
+
+    if (arg === "--no-purge") {
+      overrides.draftPurge = false;
+      continue;
+    }
+
+    if (arg.startsWith("--")) {
+      throw new Error(`Unknown argument: ${arg}`);
+    }
+
+    files.push(arg);
   }
 
-  return { command, overrides };
+  return { command, overrides, files };
 }
 
 async function setupEnvFile(cwd, envFilePath) {
@@ -132,15 +204,83 @@ async function setupEnvFile(cwd, envFilePath) {
   console.log(`Created env file: ${targetPath}`);
 }
 
+function applyDraftDefaults(overrides) {
+  return {
+    outputDir: path.resolve(process.cwd(), ".draft-pipeline"),
+    outputCssFile: path.resolve(packageRoot, "styles/pdf.css"),
+    bookLayoutCssPath: path.resolve(packageRoot, "styles/pdf-book-layout.css"),
+    headerTemplatePath: path.resolve(packageRoot, "templates/header.html"),
+    footerTemplatePath: path.resolve(packageRoot, "templates/footer.html"),
+    documentTemplatePath: path.resolve(packageRoot, "templates/document.html"),
+    themeCssPath: path.resolve(packageRoot, "themes/remarkable-edit.css"),
+    ...overrides,
+  };
+}
+
+function printResolvedConfig(config, format) {
+  const output = getConfigWithSources(config);
+
+  if (format === "json") {
+    console.log(
+      JSON.stringify(
+        output,
+        (key, value) => (value === undefined ? null : value),
+        2,
+      ),
+    );
+    return;
+  }
+
+  const rows = Object.entries(output.values).map(([key, value]) => ({
+    key,
+    value: typeof value === "string" ? value : JSON.stringify(value),
+    source: output.sources[key] ?? "unknown",
+  }));
+  console.table(rows);
+  console.log(
+    `env file: ${output.files.envFilePath} (${output.files.envFileLoaded ? "loaded" : "missing"})`,
+  );
+  console.log(
+    `config file: ${output.files.configFilePath} (${output.files.configFileLoaded ? "loaded" : "missing"})`,
+  );
+}
+
+async function runDraftCommand(files, rawOverrides) {
+  if (files.length !== 1) {
+    throw new Error("The draft command needs exactly one markdown file path.");
+  }
+
+  const { draftUpload, draftPurge, ...configOverrides } = rawOverrides;
+  const config = await loadConfig(process.cwd(), applyDraftDefaults(configOverrides), {
+    envFilePath: configOverrides.envFilePath ?? ".pipeline.env",
+    configFilePath: configOverrides.configFilePath ?? ".pipeline.config.json",
+  });
+
+  if (configOverrides.printConfig) {
+    printResolvedConfig(config, configOverrides.printConfigFormat);
+    return;
+  }
+
+  const createdPdfPaths = await renderMarkdownFiles(config, files, { verbose: true });
+
+  if (!draftUpload) {
+    console.log("reMarkable upload skipped. Use --upload to transfer the generated PDF.");
+    return;
+  }
+
+  await uploadToRemarkable(
+    { ...config, remarkableUploadEnabled: true },
+    { files: createdPdfPaths, purge: draftPurge ?? false },
+  );
+}
+
 async function main() {
-  const { command, overrides } = parseCliArgs(process.argv.slice(2));
+  const { command, overrides, files } = parseCliArgs(process.argv.slice(2));
 
   if (command === "help") {
     printHelp();
     return;
   }
-
-  const envFilePath = overrides.envFilePath ?? ".pipeline.env";
 
   if (
     overrides.printConfig &&
@@ -150,6 +290,17 @@ async function main() {
       `Invalid --print-config format: ${overrides.printConfigFormat}. Use json or table.`,
     );
   }
+
+  if (command === "draft") {
+    await runDraftCommand(files, overrides);
+    return;
+  }
+
+  if (files.length > 0) {
+    throw new Error(`Unexpected file argument(s): ${files.join(", ")}`);
+  }
+
+  const envFilePath = overrides.envFilePath ?? ".pipeline.env";
 
   if (command === "setup-env") {
     await setupEnvFile(process.cwd(), envFilePath);
@@ -163,31 +314,7 @@ async function main() {
   });
 
   if (overrides.printConfig) {
-    const output = getConfigWithSources(config);
-
-    if (overrides.printConfigFormat === "json") {
-      console.log(
-        JSON.stringify(
-          output,
-          (key, value) => (value === undefined ? null : value),
-          2,
-        ),
-      );
-    } else {
-      const rows = Object.entries(output.values).map(([key, value]) => ({
-        key,
-        value: typeof value === "string" ? value : JSON.stringify(value),
-        source: output.sources[key] ?? "unknown",
-      }));
-      console.table(rows);
-      console.log(
-        `env file: ${output.files.envFilePath} (${output.files.envFileLoaded ? "loaded" : "missing"})`,
-      );
-      console.log(
-        `config file: ${output.files.configFilePath} (${output.files.configFileLoaded ? "loaded" : "missing"})`,
-      );
-    }
-
+    printResolvedConfig(config, overrides.printConfigFormat);
     return;
   }
 
