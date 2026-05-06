@@ -4,6 +4,7 @@
   "description": "Reusable markdown-to-pdf and optional reMarkable upload toolkit",
   "type": "module",
   "bin": {
+    "draft": "./src/cli.mjs",
     "draft-pipeline": "./src/cli.mjs"
   },
   "scripts": {
