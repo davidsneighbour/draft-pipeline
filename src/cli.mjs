@@ -12,6 +12,7 @@ import { uploadToRemarkable } from "./upload-remarkable.mjs";
 
 const cliDirectory = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(cliDirectory, "..");
+const knownCommands = new Set(["css", "pdf", "upload", "build", "setup-env", "draft"]);
 
 function printHelp() {
   console.log(`draft-pipeline - A tool to convert markdown files to PDFs and upload them to reMarkable.
@@ -40,7 +41,7 @@ Options:
 
 Draft command options:
   --upload                     Upload the generated PDF to reMarkable
-  --no-upload                  Do not upload the generated PDF
+  --no-upload                  Do not upload the generated PDF (default)
   --purge                      Purge the target reMarkable folder before uploading
   --no-purge                   Do not purge the target reMarkable folder before uploading (default)
 
@@ -48,6 +49,7 @@ Examples:
   draft markdown.md
   draft markdown.md --upload
   draft markdown.md --theme remarkable-edit --upload
+  draft-pipeline draft markdown.md --upload
 
 Configuration:
   Resolution order: env -> config file -> CLI (later sources override earlier).
@@ -76,18 +78,34 @@ function getBundledThemePath(themeName) {
   return themePath;
 }
 
-function parseCliArgs(argv) {
+function looksLikeMarkdownFile(value) {
+  return /\.m(?:d|arkdown)$/i.test(value);
+}
+
+function normaliseCommand(argv) {
   const [commandArg, ...rest] = argv;
 
   if (commandArg === "--help" || commandArg === "-h" || commandArg === "help") {
-    return { command: "help", overrides: {}, files: [] };
+    return { command: "help", optionArgs: [] };
   }
 
-  const command =
-    !commandArg || commandArg.startsWith("--") ? "build" : commandArg;
-  const optionArgs =
-    commandArg && commandArg.startsWith("--") ? [commandArg, ...rest] : rest;
+  if (!commandArg || commandArg.startsWith("--")) {
+    return { command: "build", optionArgs: commandArg ? [commandArg, ...rest] : rest };
+  }
 
+  if (knownCommands.has(commandArg)) {
+    return { command: commandArg, optionArgs: rest };
+  }
+
+  if (looksLikeMarkdownFile(commandArg)) {
+    return { command: "draft", optionArgs: [commandArg, ...rest] };
+  }
+
+  return { command: commandArg, optionArgs: rest };
+}
+
+function parseCliArgs(argv) {
+  const { command, optionArgs } = normaliseCommand(argv);
   const overrides = {};
   const files = [];
 
@@ -207,7 +225,7 @@ async function setupEnvFile(cwd, envFilePath) {
 function applyDraftDefaults(overrides) {
   return {
     outputDir: path.resolve(process.cwd(), ".draft-pipeline"),
-    outputCssFile: path.resolve(packageRoot, "styles/pdf.css"),
+    outputCssFile: path.resolve(packageRoot, "styles/draft-base.css"),
     bookLayoutCssPath: path.resolve(packageRoot, "styles/pdf-book-layout.css"),
     headerTemplatePath: path.resolve(packageRoot, "templates/header.html"),
     footerTemplatePath: path.resolve(packageRoot, "templates/footer.html"),
