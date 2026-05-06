@@ -16,6 +16,7 @@ const CONFIG_ENV_KEYS = [
   "FOOTER_TEMPLATE_PATH",
   "DOCUMENT_TEMPLATE_PATH",
   "BOOK_LAYOUT_CSS_PATH",
+  "THEME_CSS_PATH",
   "REMARKABLE_UPLOAD_ENABLED",
   "REMARKABLE_HOST",
   "REMARKABLE_XOCHITL_DIR",
@@ -104,6 +105,7 @@ test("loadConfig uses defaults when no env/config/overrides are set", async () =
     config.bookLayoutCssPath,
     path.resolve(cwd, "./styles/pdf-book-layout.css"),
   );
+  assert.equal(config.themeCssPath, "");
   assert.equal(config.remarkableUploadEnabled, false);
   assert.equal(config.remarkableHost, "remarkable");
   assert.equal(config.remarkableXochitlDir, ".local/share/remarkable/xochitl");
@@ -128,6 +130,7 @@ test("env file values are loaded and parsed", async () => {
     path.join(cwd, ".pipeline.env"),
     [
       "MARKDOWN_INPUT_DIR=./chapters",
+      "THEME_CSS_PATH=./themes/edit.css",
       "REMARKABLE_UPLOAD_ENABLED=true",
       "SSH_UPLOAD_ENABLED=true",
       "SSH_UPLOAD_METHOD=RSYNC",
@@ -141,6 +144,7 @@ test("env file values are loaded and parsed", async () => {
   const config = await loadConfig(cwd);
 
   assert.equal(config.markdownInputDir, path.resolve(cwd, "./chapters"));
+  assert.equal(config.themeCssPath, path.resolve(cwd, "./themes/edit.css"));
   assert.equal(config.remarkableUploadEnabled, true);
   assert.equal(config.sshUploadEnabled, true);
   assert.equal(config.sshUploadMethod, "rsync");
@@ -167,6 +171,7 @@ test("config file values override env values and missing properties keep default
     JSON.stringify(
       {
         outputDir: "./config-dist",
+        themeCssPath: "./themes/config-theme.css",
         sshUploadMethod: "RSYNC",
       },
       null,
@@ -178,12 +183,14 @@ test("config file values override env values and missing properties keep default
   const config = await loadConfig(cwd);
 
   assert.equal(config.outputDir, path.resolve(cwd, "./config-dist"));
+  assert.equal(config.themeCssPath, path.resolve(cwd, "./themes/config-theme.css"));
   assert.equal(config.sshUploadMethod, "rsync");
   assert.equal(config.pdfBleed, "5mm");
   assert.equal(config.remarkableHost, "remarkable");
 
   const withSources = getConfigWithSources(config);
   assert.equal(withSources.sources.outputDir, "config");
+  assert.equal(withSources.sources.themeCssPath, "config");
   assert.equal(withSources.sources.pdfBleed, "env");
   assert.equal(withSources.sources.remarkableHost, "env");
   assert.equal(withSources.files.configFileLoaded, true);
@@ -208,6 +215,7 @@ test("CLI overrides take highest precedence over config and env", async () => {
     printReady: true,
     pdfBleed: "10px",
     headerTemplatePath: "./custom-header.html",
+    themeCssPath: "./themes/cli-theme.css",
   });
 
   assert.equal(config.pdfPrintReady, true);
@@ -216,11 +224,13 @@ test("CLI overrides take highest precedence over config and env", async () => {
     config.headerTemplatePath,
     path.resolve(cwd, "./custom-header.html"),
   );
+  assert.equal(config.themeCssPath, path.resolve(cwd, "./themes/cli-theme.css"));
 
   const withSources = getConfigWithSources(config);
   assert.equal(withSources.sources.pdfPrintReady, "cli");
   assert.equal(withSources.sources.pdfBleed, "cli");
   assert.equal(withSources.sources.headerTemplatePath, "cli");
+  assert.equal(withSources.sources.themeCssPath, "cli");
 });
 
 test("invalid booleans are rejected with clear errors", async () => {
@@ -281,6 +291,7 @@ test("cli --print-config=json shows evaluated values, source map and file state"
   const payload = JSON.parse(result.stdout);
   assert.equal(payload.values.outputDir, path.resolve(cwd, "./config-out"));
   assert.equal(payload.values.pdfBleed, "12px");
+  assert.equal(payload.values.themeCssPath, "");
   assert.equal(payload.values.sshPort, null);
   assert.equal(payload.sources.outputDir, "config");
   assert.equal(payload.sources.pdfBleed, "cli");
@@ -302,6 +313,7 @@ test("cli --print-config table output contains diagnostics and source rows", asy
 
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /markdownInputDir/);
+  assert.match(result.stdout, /themeCssPath/);
   assert.match(result.stdout, /source/);
   assert.match(result.stdout, /env file: .*\(loaded\)/);
   assert.match(result.stdout, /config file: .*\(missing\)/);
