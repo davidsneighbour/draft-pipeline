@@ -9,6 +9,7 @@ A standalone package extracted from the `bookofhugo.dev` toolchain for:
 
 - [How it works](#how-it-works)
   - [Single-file draft workflow](#single-file-draft-workflow)
+  - [Minimal reMarkable setup for `draft`](#minimal-remarkable-setup-for-draft)
   - [Markdown to PDF notes](#markdown-to-pdf-notes)
   - [Themes](#themes)
   - [Upload integrations](#upload-integrations)
@@ -81,6 +82,29 @@ The shortcut can also be called through the package name:
 ```bash
 draft-pipeline draft markdown.md
 ```
+
+### Minimal reMarkable setup for `draft`
+
+The `draft <file>` command uploads by default. That means your local environment must know how to reach the tablet and which reMarkable folder UUID to use.
+
+Create a `.pipeline.env` in the directory where you run `draft`, or point to another env file with `--pipeline-env`:
+
+```bash
+cat > .pipeline.env <<'EOF'
+REMARKABLE_HOST=remarkable
+REMARKABLE_XOCHITL_DIR=.local/share/remarkable/xochitl
+REMARKABLE_PARENT_FOLDER_UUID=your-folder-uuid
+REMARKABLE_PARENT_FOLDER_NAME=Drafts
+EOF
+```
+
+For a PDF-only local check that does not require a reMarkable connection, pass `--no-upload`:
+
+```bash
+draft markdown.md --no-upload
+```
+
+The directory pipeline still keeps `REMARKABLE_UPLOAD_ENABLED=false` by default. The `draft <file>` shortcut intentionally enables the reMarkable upload path for the one generated PDF unless `--no-upload` is used.
 
 ### Markdown to PDF notes
 
@@ -212,7 +236,7 @@ draft-pipeline build
 The pipeline configuration can be changed using .env variables, a config file, or directly via CLI parameters when you call the tool. To create the env file run the following command:
 
 ```bash
-npx draft-pipeline setup-env --pipeline-env sample.env
+npx @davidsneighbour/draft-pipeline setup-env --pipeline-env sample.env
 ```
 
 Leaving `--pipeline-env` out will save the example to `.pipeline.env`.
@@ -270,6 +294,16 @@ draft markdown.md --print-config=json
 | SSH target dir                        | -                     | `SSH_TARGET_DIR`                | `sshTargetDir`               | empty                             |
 | SSH upload method                     | -                     | `SSH_UPLOAD_METHOD`             | `sshUploadMethod`            | `scp`                             |
 | SSH port                              | -                     | `SSH_PORT`                      | `sshPort`                    | unset                             |
+
+For `draft <file>`, these defaults are intentionally overridden at runtime:
+
+| Purpose         | Draft default                         |
+| --------------- | ------------------------------------- |
+| Output dir      | `.draft-pipeline/`                    |
+| Output CSS file | bundled `styles/draft-base.css`       |
+| Theme CSS       | bundled `themes/remarkable-edit.css`  |
+| Upload          | enabled for the generated PDF         |
+| Purge           | disabled unless `--purge` is provided |
 
 ### Sensible defaults
 
