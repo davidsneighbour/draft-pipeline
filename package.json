@@ -29,7 +29,7 @@
     "@biomejs/biome": "2.4.14",
     "@cspell/dict-en-gb": "5.0.27",
     "@release-it/conventional-changelog": "11.0.0",
-    "release-it": "20.0.1"
+    "release-it": "20.2.1"
   },
   "publishConfig": {
     "access": "public"
